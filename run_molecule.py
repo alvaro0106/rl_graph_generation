@@ -3,7 +3,7 @@
 from mpi4py import MPI
 from baselines.common import set_global_seeds
 from baselines import logger
-from tensorboardX import SummaryWriter
+# from tensorboardX import SummaryWriter
 import os
 import tensorflow as tf
 
@@ -13,35 +13,37 @@ from gym_molecule.envs.molecule import GraphEnv
 def train(args,seed,writer=None):
     from baselines.ppo1 import pposgd_simple_gcn, gcn_policy
     import baselines.common.tf_util as U
-    rank = MPI.COMM_WORLD.Get_rank()
-    sess = U.single_threaded_session()
-    sess.__enter__()
-    if rank == 0:
-        logger.configure()
-    else:
-        logger.configure(format_strs=[])
-    workerseed = seed + 10000 * MPI.COMM_WORLD.Get_rank()
-    set_global_seeds(workerseed)
-    if args.env=='molecule':
-        env = gym.make('molecule-v0')
-        env.init(data_type=args.dataset,logp_ratio=args.logp_ratio,qed_ratio=args.qed_ratio,sa_ratio=args.sa_ratio,reward_step_total=args.reward_step_total,is_normalize=args.normalize_adj,reward_type=args.reward_type,reward_target=args.reward_target,has_feature=bool(args.has_feature),is_conditional=bool(args.is_conditional),conditional=args.conditional,max_action=args.max_action,min_action=args.min_action) # remember call this after gym.make!!
-    elif args.env=='graph':
-        env = GraphEnv()
-        env.init(reward_step_total=args.reward_step_total,is_normalize=args.normalize_adj,dataset=args.dataset) # remember call this after gym.make!!
-    print(env.observation_space)
-    def policy_fn(name, ob_space, ac_space):
-        return gcn_policy.GCNPolicy(name=name, ob_space=ob_space, ac_space=ac_space, atom_type_num=env.atom_type_num,args=args)
-    env.seed(workerseed)
+    # rank = MPI.COMM_WORLD.Get_rank() #alv
+    # sess = U.single_threaded_session()
+    # sess.__enter__()
+    # if rank == 0:
+    #     logger.configure()
+    # else:
+    #     logger.configure(format_strs=[])
+    # workerseed = seed + 10000 * MPI.COMM_WORLD.Get_rank()
+    # set_global_seeds(workerseed)
+    # if args.env=='molecule':
+    #     env = gym.make('molecule-v0')
+    #     env.init(data_type=args.dataset,logp_ratio=args.logp_ratio,qed_ratio=args.qed_ratio,sa_ratio=args.sa_ratio,reward_step_total=args.reward_step_total,is_normalize=args.normalize_adj,reward_type=args.reward_type,reward_target=args.reward_target,has_feature=bool(args.has_feature),is_conditional=bool(args.is_conditional),conditional=args.conditional,max_action=args.max_action,min_action=args.min_action) # remember call this after gym.make!!
+    # elif args.env=='graph':
+    #     env = GraphEnv()
+    #     env.init(reward_step_total=args.reward_step_total,is_normalize=args.normalize_adj,dataset=args.dataset) # remember call this after gym.make!!
+    # print(env.observation_space) #alv
+    # def policy_fn(name, ob_space, ac_space):
+    #     return gcn_policy.GCNPolicy(name=name, ob_space=ob_space, ac_space=ac_space, atom_type_num=env.atom_type_num,args=args)
+    # env.seed(workerseed)
 
-    pposgd_simple_gcn.learn(args,env, policy_fn,
-        max_timesteps=args.num_steps,
-        timesteps_per_actorbatch=256,
-        clip_param=0.2, entcoeff=0.01,
-        optim_epochs=8, optim_stepsize=args.lr, optim_batchsize=32,
-        gamma=1, lam=0.95,
-        schedule='linear', writer=writer
-    )
+    # pposgd_simple_gcn.learn(args,env, policy_fn,
+    #     max_timesteps=args.num_steps,
+    #     timesteps_per_actorbatch=256,
+    #     clip_param=0.2, entcoeff=0.01,
+    #     optim_epochs=8, optim_stepsize=args.lr, optim_batchsize=32,
+    #     gamma=1, lam=0.95,
+    #     schedule='linear', writer=writer
+    # )
     env.close()
+
+
 
 def arg_parser():
     """
@@ -50,6 +52,7 @@ def arg_parser():
     import argparse
     return argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
 
 def molecule_arg_parser():
     parser = arg_parser()
@@ -113,7 +116,13 @@ def molecule_arg_parser():
 
 def main():
     args = molecule_arg_parser().parse_args()
-    print(args)
+    print(args) #alv
+    
+    writer = None
+    train(args,seed=args.seed,writer=writer)
+
+
+"""
     args.name_full = args.env + '_' + args.dataset + '_' + args.name
     args.name_full_load = args.env + '_' + args.dataset_load + '_' + args.name_load + '_' + str(args.load_step)
     # check and clean
@@ -121,13 +130,16 @@ def main():
         os.makedirs('molecule_gen')
     if not os.path.exists('ckpt'):
         os.makedirs('ckpt')
+"""
 
+"""
     # only keep first worker result in tensorboard
     if MPI.COMM_WORLD.Get_rank() == 0:
         writer = SummaryWriter(comment='_'+args.dataset+'_'+args.name)
     else:
         writer = None
     train(args,seed=args.seed,writer=writer)
+"""
 
 if __name__ == '__main__':
     main()

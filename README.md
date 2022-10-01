@@ -36,7 +36,7 @@ There are 4 important files:
 ## Run
 - single process run
 ```bash
-python run_molecule.py
+python3 run_molecule.py
 ```
 - mutiple processes run
 ```bash
